@@ -12,6 +12,5 @@ func main() {
 	output := flag.String("output", ".", "path to store generated file")
 
 	flag.Parse()
-	_ = *conversionType
-	transform.TransformToJSON(*input, *output)
+	transform.Transform(*input, *output, *conversionType)
 }

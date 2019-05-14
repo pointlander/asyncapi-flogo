@@ -16,11 +16,11 @@ func init() {
 
 var input, conversionType, output string
 var appgen = &cobra.Command{
-	Use:              "appgen",
+	Use:              "asyncapi",
 	Short:            "generates flogo app",
 	Long:             "generates flogo application for supplied async api specification",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {},
 	Run: func(cmd *cobra.Command, args []string) {
-		transform.TransformToJSON(input, output)
+		transform.Transform(input, output, conversionType)
 	},
 }

@@ -9,13 +9,27 @@ import (
 	_ "github.com/asyncapi/parser/pkg/errs"
 	"github.com/asyncapi/parser/pkg/models"
 	"github.com/project-flogo/core/action"
+	coreapi "github.com/project-flogo/core/api"
 	"github.com/project-flogo/core/app"
 	"github.com/project-flogo/core/app/resource"
 	"github.com/project-flogo/core/trigger"
+	_ "github.com/project-flogo/microgateway"
 	"github.com/project-flogo/microgateway/api"
 )
 
-func TransformToJSON(input, output string) {
+// Transform converts an asyn api to a new representation
+func Transform(input, output, conversionType string) {
+	switch conversionType {
+	case "flogoapiapp":
+		ToAPI(input, output)
+	case "flogodescriptor":
+		ToJSON(input, output)
+	default:
+		panic("invalid type")
+	}
+}
+
+func convert(input string) *app.Config {
 	document, err := ioutil.ReadFile(input)
 	if err != nil {
 		panic(err)
@@ -31,12 +45,6 @@ func TransformToJSON(input, output string) {
 	if err != nil {
 		panic(err)
 	}
-
-	data, err := json.MarshalIndent(&model, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(data))
 
 	flogo := app.Config{}
 	flogo.Name = model.Id
@@ -80,7 +88,7 @@ func TransformToJSON(input, output string) {
 	}
 
 	gateway := api.Microgateway{
-		Name: "default",
+		Name: "Default",
 	}
 	service := api.Service{
 		Name:        "log",
@@ -107,7 +115,19 @@ func TransformToJSON(input, output string) {
 	}
 	flogo.Resources = append(flogo.Resources, &res)
 
-	data, err = json.MarshalIndent(&flogo, "", "  ")
+	return &flogo
+}
+
+// ToAPI converts an asyn api to a API flogo application
+func ToAPI(input, output string) {
+	flogo := convert(input)
+	coreapi.Generate(flogo, output+"/app.go")
+}
+
+// ToJSON converts an async api to a JSON flogo application
+func ToJSON(input, output string) {
+	flogo := convert(input)
+	data, err := json.MarshalIndent(flogo, "", "  ")
 	if err != nil {
 		panic(err)
 	}
