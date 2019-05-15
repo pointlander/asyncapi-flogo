@@ -94,10 +94,32 @@ func convert(input string) *app.Config {
 			}
 			for name, channel := range model.Channels {
 				if channel.Subscribe != nil {
+					settings := map[string]interface{}{
+						"topic": name,
+					}
+					if len(channel.Subscribe.ProtocolInfo) > 0 {
+						var protocolInfo map[string]interface{}
+						err := json.Unmarshal(channel.Subscribe.ProtocolInfo, &protocolInfo)
+						if err != nil {
+							panic(err)
+						}
+						if value := protocolInfo["flogo-kafka"]; value != nil {
+							if flogo, ok := value.(map[string]interface{}); ok {
+								if value := flogo["partitions"]; value != nil {
+									if partitions, ok := value.(string); ok {
+										settings["partitions"] = partitions
+									}
+								}
+								if value := flogo["offset"]; value != nil {
+									if offset, ok := value.(float64); ok {
+										settings["offset"] = int64(offset)
+									}
+								}
+							}
+						}
+					}
 					handler := trigger.HandlerConfig{
-						Settings: map[string]interface{}{
-							"topic": name,
-						},
+						Settings: settings,
 					}
 					action := action.Config{
 						Ref: "github.com/project-flogo/microgateway",
