@@ -53,8 +53,30 @@ func convert(input string) *app.Config {
 	flogo.Description = model.Info.Description
 	flogo.AppModel = "1.1.0"
 
+	var schemes map[string]interface{}
+	if len(model.Components.SecuritySchemes) > 0 {
+		err = json.Unmarshal(model.Components.SecuritySchemes, &schemes)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	for i, server := range model.Servers {
-		if server.Protocol == "kafka" {
+		if isSecure := server.Protocol == "kafka-secure"; server.Protocol == "kafka" || isSecure {
+			hasUserPassword := false
+			for _, requirement := range server.Security {
+				for scheme := range *requirement {
+					if entry := schemes[scheme]; entry != nil {
+						if definition, ok := entry.(map[string]interface{}); ok {
+							if value := definition["type"]; value != nil {
+								if typ, ok := value.(string); ok && typ == "userPassword" {
+									hasUserPassword = true
+								}
+							}
+						}
+					}
+				}
+			}
 			trig := trigger.Config{
 				Id:  fmt.Sprintf("server%d", i),
 				Ref: "github.com/project-flogo/contrib/trigger/kafka",
@@ -62,6 +84,13 @@ func convert(input string) *app.Config {
 					"brokerUrls": server.Url,
 					"trustStore": "",
 				},
+			}
+			if hasUserPassword {
+				trig.Settings["user"] = "=$env[USER]"
+				trig.Settings["password"] = "=$env[PASSWORD]"
+			}
+			if isSecure {
+				trig.Settings["trustStore"] = "=$env[TRUST_STORE]"
 			}
 			for name, channel := range model.Channels {
 				if channel.Subscribe != nil {
