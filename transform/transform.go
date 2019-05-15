@@ -12,6 +12,7 @@ import (
 	coreapi "github.com/project-flogo/core/api"
 	"github.com/project-flogo/core/app"
 	"github.com/project-flogo/core/app/resource"
+	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/trigger"
 	_ "github.com/project-flogo/microgateway"
 	"github.com/project-flogo/microgateway/api"
@@ -78,12 +79,15 @@ func convert(input string) *app.Config {
 					}
 				}
 			}
+			brokerUrls := fmt.Sprintf("server%dURL", i)
+			attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
+			brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
+			flogo.Properties = append(flogo.Properties, attribute)
 			trig := trigger.Config{
 				Id:  fmt.Sprintf("server%d", i),
 				Ref: "github.com/project-flogo/contrib/trigger/kafka",
 				Settings: map[string]interface{}{
-					"brokerUrls": server.Url,
-					"trustStore": "",
+					"brokerUrls": brokerUrls,
 				},
 			}
 			if hasUserPassword {
@@ -136,7 +140,7 @@ func convert(input string) *app.Config {
 				}
 				if channel.Publish != nil {
 					settings := map[string]interface{}{
-						"brokerUrls": server.Url,
+						"brokerUrls": brokerUrls,
 						"topic":      name,
 					}
 					if hasUserPassword {
