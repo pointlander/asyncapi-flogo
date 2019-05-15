@@ -61,6 +61,7 @@ func convert(input string) *app.Config {
 		}
 	}
 
+	services := make([]*api.Service, 0, 8)
 	for i, server := range model.Servers {
 		if isSecure := server.Protocol == "kafka-secure"; server.Protocol == "kafka" || isSecure {
 			hasUserPassword := false
@@ -133,38 +134,114 @@ func convert(input string) *app.Config {
 					handler.Actions = append(handler.Actions, &actionConfig)
 					trig.Handlers = append(trig.Handlers, &handler)
 				}
+				if channel.Publish != nil {
+					settings := map[string]interface{}{
+						"brokerUrls": server.Url,
+						"topic":      name,
+					}
+					if hasUserPassword {
+						settings["user"] = "=$.env[USER]"
+						settings["password"] = "=$.env[PASSWORD]"
+					}
+					if isSecure {
+						settings["trustStore"] = "=$.env[TRUST_STORE]"
+					}
+					service := &api.Service{
+						Name:        fmt.Sprintf("kafka-name-%s", name),
+						Ref:         "github.com/project-flogo/contrib/activity/kafka",
+						Description: "kafka service",
+						Settings:    settings,
+					}
+					services = append(services, service)
+				}
 			}
 			flogo.Triggers = append(flogo.Triggers, &trig)
 		}
 	}
 
-	gateway := api.Microgateway{
+	gateway := &api.Microgateway{
 		Name: "Default",
 	}
-	service := api.Service{
+	service := &api.Service{
 		Name:        "log",
 		Ref:         "github.com/project-flogo/contrib/activity/log",
 		Description: "logging service",
 	}
-	gateway.Services = append(gateway.Services, &service)
-	step := api.Step{
+	gateway.Services = append(gateway.Services, service)
+	step := &api.Step{
 		Service: "log",
 		Input: map[string]interface{}{
-			"message": "test message",
+			"message": "=$.payload.message",
 		},
 	}
-	gateway.Steps = append(gateway.Steps, &step)
+	gateway.Steps = append(gateway.Steps, step)
 
-	raw, err := json.Marshal(&gateway)
+	raw, err := json.Marshal(gateway)
 	if err != nil {
 		panic(err)
 	}
 
-	res := resource.Config{
+	res := &resource.Config{
 		ID:   "microgateway:Default",
 		Data: raw,
 	}
-	flogo.Resources = append(flogo.Resources, &res)
+	flogo.Resources = append(flogo.Resources, res)
+
+	if len(services) > 0 {
+		trig := trigger.Config{
+			Id:  "KafkaPublish",
+			Ref: "github.com/project-flogo/contrib/trigger/rest",
+			Settings: map[string]interface{}{
+				"port": "9096",
+			},
+		}
+		handler := trigger.HandlerConfig{
+			Settings: map[string]interface{}{
+				"method": "POST",
+				"path":   "/post",
+			},
+		}
+		action := action.Config{
+			Ref: "github.com/project-flogo/microgateway",
+			Settings: map[string]interface{}{
+				"uri": "microgateway:KafkaPublish",
+			},
+		}
+		actionConfig := trigger.ActionConfig{
+			Config: &action,
+		}
+		handler.Actions = append(handler.Actions, &actionConfig)
+		trig.Handlers = append(trig.Handlers, &handler)
+		flogo.Triggers = append(flogo.Triggers, &trig)
+
+		gateway = &api.Microgateway{
+			Name: "KafkaPublish",
+		}
+		service = &api.Service{
+			Name:        "log",
+			Ref:         "github.com/project-flogo/contrib/activity/log",
+			Description: "logging service",
+		}
+		gateway.Services = append(services, service)
+		step = &api.Step{
+			Service: "log",
+			Input: map[string]interface{}{
+				"message": "=$.payload.content",
+			},
+		}
+		gateway.Steps = append(gateway.Steps, step)
+
+		raw, err = json.Marshal(gateway)
+		if err != nil {
+			panic(err)
+		}
+
+		res = &resource.Config{
+			ID:   "microgateway:KafkaPublish",
+			Data: raw,
+		}
+		flogo.Resources = append(flogo.Resources, res)
+	}
 
 	return &flogo
 }
