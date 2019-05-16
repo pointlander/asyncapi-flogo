@@ -21,18 +21,10 @@ channels:
       summary: Get messages
       message:
         $ref: '#/components/messages/message'
-      protocolInfo:
-        flogo-kafka:
-          partitions: "0"
-          offset: 0
     publish:
       summary: Send messages
       message:
         $ref: '#/components/messages/message'
-      protocolInfo:
-        flogo-kafka:
-          partitions: "0"
-          offset: 0
   dup:
     description: A duplicate message channel
     subscribe:

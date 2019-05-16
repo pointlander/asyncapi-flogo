@@ -90,7 +90,7 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 						if err != nil {
 							panic(err)
 						}
-						if value := protocolInfo[fmt.Sprintf("flogo-%s", p.name)]; value != nil {
+						if value := protocolInfo["flogo-kafka"]; value != nil {
 							if flogo, ok := value.(map[string]interface{}); ok {
 								if value := flogo["partitions"]; value != nil {
 									if partitions, ok := value.(string); ok {
