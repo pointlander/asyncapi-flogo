@@ -30,6 +30,211 @@ func Transform(input, output, conversionType string) {
 	}
 }
 
+type protocolConfig struct {
+	name, secure      string
+	trigger, activity string
+	port              string
+	urlSetting        string
+	trustStoreSetting string
+	topicSetting      string
+	contentPath       string
+}
+
+func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[string]interface{}, flogo *app.Config) {
+	services := make([]*api.Service, 0, 8)
+	for i, server := range model.Servers {
+		if isSecure := server.Protocol == p.secure; server.Protocol == p.name || isSecure {
+			hasUserPassword := false
+			for _, requirement := range server.Security {
+				for scheme := range *requirement {
+					if entry := schemes[scheme]; entry != nil {
+						if definition, ok := entry.(map[string]interface{}); ok {
+							if value := definition["type"]; value != nil {
+								if typ, ok := value.(string); ok && typ == "userPassword" {
+									hasUserPassword = true
+								}
+							}
+						}
+					}
+				}
+			}
+			brokerUrls := fmt.Sprintf("%s%dURL", p.name, i)
+			attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
+			brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
+			flogo.Properties = append(flogo.Properties, attribute)
+			trig := trigger.Config{
+				Id:  fmt.Sprintf("%s%d", p.name, i),
+				Ref: p.trigger,
+				Settings: map[string]interface{}{
+					p.urlSetting: brokerUrls,
+				},
+			}
+			if p.name == "eftl" || p.name == "eftl-secure" {
+				trig.Settings["id"] = p.name
+			}
+			if hasUserPassword {
+				trig.Settings["user"] = "=$env[USER]"
+				trig.Settings["password"] = "=$env[PASSWORD]"
+			}
+			if isSecure {
+				trig.Settings[p.trustStoreSetting] = "=$env[TRUST_STORE]"
+			}
+			for name, channel := range model.Channels {
+				if channel.Subscribe != nil {
+					settings := map[string]interface{}{
+						p.topicSetting: name,
+					}
+					if len(channel.Subscribe.ProtocolInfo) > 0 {
+						var protocolInfo map[string]interface{}
+						err := json.Unmarshal(channel.Subscribe.ProtocolInfo, &protocolInfo)
+						if err != nil {
+							panic(err)
+						}
+						if value := protocolInfo[fmt.Sprintf("flogo-%s", p.name)]; value != nil {
+							if flogo, ok := value.(map[string]interface{}); ok {
+								if value := flogo["partitions"]; value != nil {
+									if partitions, ok := value.(string); ok {
+										settings["partitions"] = partitions
+									}
+								}
+								if value := flogo["offset"]; value != nil {
+									if offset, ok := value.(float64); ok {
+										settings["offset"] = int64(offset)
+									}
+								}
+							}
+						}
+					}
+					handler := trigger.HandlerConfig{
+						Settings: settings,
+					}
+					action := action.Config{
+						Ref: "github.com/project-flogo/microgateway",
+						Settings: map[string]interface{}{
+							"uri": fmt.Sprintf("microgateway:%s", p.name),
+						},
+					}
+					actionConfig := trigger.ActionConfig{
+						Config: &action,
+					}
+					handler.Actions = append(handler.Actions, &actionConfig)
+					trig.Handlers = append(trig.Handlers, &handler)
+				}
+				if channel.Publish != nil {
+					settings := map[string]interface{}{
+						p.urlSetting:   brokerUrls,
+						p.topicSetting: name,
+					}
+					if p.name == "eftl" || p.name == "eftl-secure" {
+						settings["id"] = p.name
+					}
+					if hasUserPassword {
+						settings["user"] = "=$.env[USER]"
+						settings["password"] = "=$.env[PASSWORD]"
+					}
+					if isSecure {
+						settings[p.trustStoreSetting] = "=$.env[TRUST_STORE]"
+					}
+					service := &api.Service{
+						Name:        fmt.Sprintf("%s-name-%s", p.name, name),
+						Ref:         p.activity,
+						Description: fmt.Sprintf("%s service", p.name),
+						Settings:    settings,
+					}
+					services = append(services, service)
+				}
+			}
+			flogo.Triggers = append(flogo.Triggers, &trig)
+		}
+	}
+
+	if len(flogo.Triggers) > 0 {
+		gateway := &api.Microgateway{
+			Name: p.name,
+		}
+		service := &api.Service{
+			Name:        "log",
+			Ref:         "github.com/project-flogo/contrib/activity/log",
+			Description: "logging service",
+		}
+		gateway.Services = append(gateway.Services, service)
+		step := &api.Step{
+			Service: "log",
+			Input: map[string]interface{}{
+				"message": fmt.Sprintf("=$.payload.%s", p.contentPath),
+			},
+		}
+		gateway.Steps = append(gateway.Steps, step)
+
+		raw, err := json.Marshal(gateway)
+		if err != nil {
+			panic(err)
+		}
+
+		res := &resource.Config{
+			ID:   fmt.Sprintf("microgateway:%s", p.name),
+			Data: raw,
+		}
+		flogo.Resources = append(flogo.Resources, res)
+	}
+
+	if len(services) > 0 {
+		trig := trigger.Config{
+			Id:  fmt.Sprintf("%sPublish", p.name),
+			Ref: "github.com/project-flogo/contrib/trigger/rest",
+			Settings: map[string]interface{}{
+				"port": p.port,
+			},
+		}
+		handler := trigger.HandlerConfig{
+			Settings: map[string]interface{}{
+				"method": "POST",
+				"path":   "/post",
+			},
+		}
+		action := action.Config{
+			Ref: "github.com/project-flogo/microgateway",
+			Settings: map[string]interface{}{
+				"uri": fmt.Sprintf("microgateway:%sPublish", p.name),
+			},
+		}
+		actionConfig := trigger.ActionConfig{
+			Config: &action,
+		}
+		handler.Actions = append(handler.Actions, &actionConfig)
+		trig.Handlers = append(trig.Handlers, &handler)
+		flogo.Triggers = append(flogo.Triggers, &trig)
+
+		gateway := &api.Microgateway{
+			Name: fmt.Sprintf("%sPublish", p.name),
+		}
+		service := &api.Service{
+			Name:        "log",
+			Ref:         "github.com/project-flogo/contrib/activity/log",
+			Description: "logging service",
+		}
+		gateway.Services = append(services, service)
+		step := &api.Step{
+			Service: "log",
+			Input: map[string]interface{}{
+				"message": "=$.payload.content",
+			},
+		}
+		gateway.Steps = append(gateway.Steps, step)
+
+		raw, err := json.Marshal(gateway)
+		if err != nil {
+			panic(err)
+		}
+
+		res := &resource.Config{
+			ID:   fmt.Sprintf("microgateway:%sPublish", p.name),
+			Data: raw,
+		}
+		flogo.Resources = append(flogo.Resources, res)
+	}
+}
+
 func convert(input string) *app.Config {
 	document, err := ioutil.ReadFile(input)
 	if err != nil {
@@ -62,189 +267,32 @@ func convert(input string) *app.Config {
 		}
 	}
 
-	services := make([]*api.Service, 0, 8)
-	for i, server := range model.Servers {
-		if isSecure := server.Protocol == "kafka-secure"; server.Protocol == "kafka" || isSecure {
-			hasUserPassword := false
-			for _, requirement := range server.Security {
-				for scheme := range *requirement {
-					if entry := schemes[scheme]; entry != nil {
-						if definition, ok := entry.(map[string]interface{}); ok {
-							if value := definition["type"]; value != nil {
-								if typ, ok := value.(string); ok && typ == "userPassword" {
-									hasUserPassword = true
-								}
-							}
-						}
-					}
-				}
-			}
-			brokerUrls := fmt.Sprintf("server%dURL", i)
-			attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
-			brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
-			flogo.Properties = append(flogo.Properties, attribute)
-			trig := trigger.Config{
-				Id:  fmt.Sprintf("server%d", i),
-				Ref: "github.com/project-flogo/contrib/trigger/kafka",
-				Settings: map[string]interface{}{
-					"brokerUrls": brokerUrls,
-				},
-			}
-			if hasUserPassword {
-				trig.Settings["user"] = "=$env[USER]"
-				trig.Settings["password"] = "=$env[PASSWORD]"
-			}
-			if isSecure {
-				trig.Settings["trustStore"] = "=$env[TRUST_STORE]"
-			}
-			for name, channel := range model.Channels {
-				if channel.Subscribe != nil {
-					settings := map[string]interface{}{
-						"topic": name,
-					}
-					if len(channel.Subscribe.ProtocolInfo) > 0 {
-						var protocolInfo map[string]interface{}
-						err := json.Unmarshal(channel.Subscribe.ProtocolInfo, &protocolInfo)
-						if err != nil {
-							panic(err)
-						}
-						if value := protocolInfo["flogo-kafka"]; value != nil {
-							if flogo, ok := value.(map[string]interface{}); ok {
-								if value := flogo["partitions"]; value != nil {
-									if partitions, ok := value.(string); ok {
-										settings["partitions"] = partitions
-									}
-								}
-								if value := flogo["offset"]; value != nil {
-									if offset, ok := value.(float64); ok {
-										settings["offset"] = int64(offset)
-									}
-								}
-							}
-						}
-					}
-					handler := trigger.HandlerConfig{
-						Settings: settings,
-					}
-					action := action.Config{
-						Ref: "github.com/project-flogo/microgateway",
-						Settings: map[string]interface{}{
-							"uri": "microgateway:Default",
-						},
-					}
-					actionConfig := trigger.ActionConfig{
-						Config: &action,
-					}
-					handler.Actions = append(handler.Actions, &actionConfig)
-					trig.Handlers = append(trig.Handlers, &handler)
-				}
-				if channel.Publish != nil {
-					settings := map[string]interface{}{
-						"brokerUrls": brokerUrls,
-						"topic":      name,
-					}
-					if hasUserPassword {
-						settings["user"] = "=$.env[USER]"
-						settings["password"] = "=$.env[PASSWORD]"
-					}
-					if isSecure {
-						settings["trustStore"] = "=$.env[TRUST_STORE]"
-					}
-					service := &api.Service{
-						Name:        fmt.Sprintf("kafka-name-%s", name),
-						Ref:         "github.com/project-flogo/contrib/activity/kafka",
-						Description: "kafka service",
-						Settings:    settings,
-					}
-					services = append(services, service)
-				}
-			}
-			flogo.Triggers = append(flogo.Triggers, &trig)
-		}
-	}
-
-	gateway := &api.Microgateway{
-		Name: "Default",
-	}
-	service := &api.Service{
-		Name:        "log",
-		Ref:         "github.com/project-flogo/contrib/activity/log",
-		Description: "logging service",
-	}
-	gateway.Services = append(gateway.Services, service)
-	step := &api.Step{
-		Service: "log",
-		Input: map[string]interface{}{
-			"message": "=$.payload.message",
+	configs := [...]protocolConfig{
+		{
+			name:              "kafka",
+			secure:            "kafka-secure",
+			trigger:           "github.com/project-flogo/contrib/trigger/kafka",
+			activity:          "github.com/project-flogo/contrib/activity/kafka",
+			port:              "9096",
+			urlSetting:        "brokerUrls",
+			trustStoreSetting: "trustStore",
+			topicSetting:      "topic",
+			contentPath:       "message",
+		},
+		{
+			name:              "eftl",
+			secure:            "eftl-secure",
+			trigger:           "github.com/project-flogo/eftl/trigger",
+			activity:          "github.com/project-flogo/eftl/activity",
+			port:              "9097",
+			urlSetting:        "url",
+			trustStoreSetting: "ca",
+			topicSetting:      "dest",
+			contentPath:       "content",
 		},
 	}
-	gateway.Steps = append(gateway.Steps, step)
-
-	raw, err := json.Marshal(gateway)
-	if err != nil {
-		panic(err)
-	}
-
-	res := &resource.Config{
-		ID:   "microgateway:Default",
-		Data: raw,
-	}
-	flogo.Resources = append(flogo.Resources, res)
-
-	if len(services) > 0 {
-		trig := trigger.Config{
-			Id:  "KafkaPublish",
-			Ref: "github.com/project-flogo/contrib/trigger/rest",
-			Settings: map[string]interface{}{
-				"port": "9096",
-			},
-		}
-		handler := trigger.HandlerConfig{
-			Settings: map[string]interface{}{
-				"method": "POST",
-				"path":   "/post",
-			},
-		}
-		action := action.Config{
-			Ref: "github.com/project-flogo/microgateway",
-			Settings: map[string]interface{}{
-				"uri": "microgateway:KafkaPublish",
-			},
-		}
-		actionConfig := trigger.ActionConfig{
-			Config: &action,
-		}
-		handler.Actions = append(handler.Actions, &actionConfig)
-		trig.Handlers = append(trig.Handlers, &handler)
-		flogo.Triggers = append(flogo.Triggers, &trig)
-
-		gateway = &api.Microgateway{
-			Name: "KafkaPublish",
-		}
-		service = &api.Service{
-			Name:        "log",
-			Ref:         "github.com/project-flogo/contrib/activity/log",
-			Description: "logging service",
-		}
-		gateway.Services = append(services, service)
-		step = &api.Step{
-			Service: "log",
-			Input: map[string]interface{}{
-				"message": "=$.payload.content",
-			},
-		}
-		gateway.Steps = append(gateway.Steps, step)
-
-		raw, err = json.Marshal(gateway)
-		if err != nil {
-			panic(err)
-		}
-
-		res = &resource.Config{
-			ID:   "microgateway:KafkaPublish",
-			Data: raw,
-		}
-		flogo.Resources = append(flogo.Resources, res)
+	for _, config := range configs {
+		config.protocol(&model, schemes, &flogo)
 	}
 
 	return &flogo

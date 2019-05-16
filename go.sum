@@ -6,6 +6,7 @@ github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMx
 github.com/asyncapi/parser v0.0.0-20190506150237-e2e785dfad03 h1:nqzuS4kNW6o0/A+iHqStck5aSImOp/TBztePNnsZC60=
 github.com/asyncapi/parser v0.0.0-20190506150237-e2e785dfad03/go.mod h1:sZVZ4a3akcnl9BCInzmBwD+CDRc9ElIlflsoxXgQXkw=
 github.com/awalterschulze/gographviz v0.0.0-20170410065617-c84395e536e1/go.mod h1:GEV5wmg4YquNw7v1kkyoX9etIk8yVmXj+AkDHuuETHs=
+github.com/carlescere/scheduler v0.0.0-20170109141437-ee74d2f83d82/go.mod h1:tyA14J0sA3Hph4dt+AfCjPrYR13+vVodshQSM7km9qw=
 github.com/chewxy/hm v1.0.0/go.mod h1:qg9YI4q6Fkj/whwHR1D+bOGeF7SniIP40VweVepLjg0=
 github.com/chewxy/math32 v1.0.0/go.mod h1:Miac6hA1ohdDUTagnvJy/q+aNnEk16qWUdb8ZVhvCN0=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -29,6 +30,8 @@ github.com/gonum/blas v0.0.0-20180125090452-e7c5890b24cf/go.mod h1:P32wAyui1PQ58
 github.com/google/flatbuffers v1.10.0/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
 github.com/google/go-cmp v0.2.0 h1:+dTQ8DZQJz0Mb/HjFlkptS1FeQ4cWSnN941F8aEG4SQ=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
+github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
+github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
 github.com/julienschmidt/httprouter v1.2.0 h1:TDTW5Yz1mjftljbcKqRcrYhd4XeOoI98t+9HbQbYf7g=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/leesper/go_rng v0.0.0-20171009123644-5344a9259b21/go.mod h1:N0SVk0uhy+E1PZ3C9ctsPRlvOPAFPkCNlcPBDkt0N3U=
@@ -60,6 +63,8 @@ github.com/pointlander/core v0.9.0-alpha.0.0.20190516170615-e0b906d347b3 h1:ECPg
 github.com/pointlander/core v0.9.0-alpha.0.0.20190516170615-e0b906d347b3/go.mod h1:QGWi7TDLlhGUaYH3n/16ImCuulbEHGADYEXyrcHhX7U=
 github.com/project-flogo/cli v0.9.0-rc.2 h1:rPHa4xnX3GZzjVGXhBhuN8t3/YdMpyX0hoGgOxNCX8Q=
 github.com/project-flogo/cli v0.9.0-rc.2/go.mod h1:rBScDq+LWdU3fZOKjBwDIpanYPqCabL6oMQZThdxx+0=
+github.com/project-flogo/contrib v0.9.0-alpha.3.0.20190211153431-680ebf186e58/go.mod h1:tdinBFJomgOs2xQJCc3igHomrCeu2JaHu1EbuYb56Ww=
+github.com/project-flogo/contrib v0.9.0-alpha.4/go.mod h1:tdinBFJomgOs2xQJCc3igHomrCeu2JaHu1EbuYb56Ww=
 github.com/project-flogo/contrib v0.9.0-alpha.4.0.20190318145021-54b56025362c h1:YN7EMat5RvlpkNII8/M9fsWNHNrFdEkv15qYPmILaxQ=
 github.com/project-flogo/contrib v0.9.0-alpha.4.0.20190318145021-54b56025362c/go.mod h1:Kb5SnL/QUYZn6VevmylHjSLPNVa9B3jN53YeTF80iz4=
 github.com/project-flogo/contrib v0.9.0-alpha.4.0.20190509204259-4246269fb68e h1:mIk/AAkV4qCNjyO9Njj/BB90pvOIjLZAYJgjgFFxnsw=
@@ -70,6 +75,8 @@ github.com/project-flogo/contrib/activity/counter v0.0.0-20190318145021-54b56025
 github.com/project-flogo/contrib/activity/counter v0.9.0-rc.1.0.20190509204259-4246269fb68e/go.mod h1:luwWo7dR6stBk9+0rKz1kjrMdFcCkNHaN2tCrVHCrR4=
 github.com/project-flogo/contrib/activity/kafka v0.9.0 h1:X9BjaYh1g6DLux934sjdxtU98u08wdfGdYVkCY2Pqyo=
 github.com/project-flogo/contrib/activity/kafka v0.9.0/go.mod h1:qJSGv/1K68Nto2/LBNGH99VkNszvUymxmSKDlpYMz68=
+github.com/project-flogo/contrib/activity/kafka v0.9.1-0.20190516180541-534215f1b7ac h1:f326o04aW++6FcWqRjOBev7FrT2IPcZd8PxUZcCz59k=
+github.com/project-flogo/contrib/activity/kafka v0.9.1-0.20190516180541-534215f1b7ac/go.mod h1:qJSGv/1K68Nto2/LBNGH99VkNszvUymxmSKDlpYMz68=
 github.com/project-flogo/contrib/activity/log v0.0.0-20190318145021-54b56025362c/go.mod h1:kZ9FG5aa5hhiSM0nZhNjgwZwkiyiWgok9tE9A4AHJk8=
 github.com/project-flogo/contrib/activity/log v0.9.0-rc.1.0.20190509204259-4246269fb68e h1:zuoN/Oak9MfxrLh6fwmaeQygQAjSB7JVKj12lczQUys=
 github.com/project-flogo/contrib/activity/log v0.9.0-rc.1.0.20190509204259-4246269fb68e/go.mod h1:vLsMeHqqlxod+KUcjbAhQPixrpyyO/MBuUp32eWVXCA=
@@ -108,6 +115,9 @@ github.com/project-flogo/core v0.9.0-alpha.6/go.mod h1:eB+hMcq51lOIeJ93K8Nvvm/vC
 github.com/project-flogo/core v0.9.0-alpha.6.0.20190315150153-4c57a9c50a67/go.mod h1:eB+hMcq51lOIeJ93K8Nvvm/vC3OI60ZaEgBbA4gtk8k=
 github.com/project-flogo/core v0.9.0-rc.2 h1:4aarcKrlyHMjwcoGgn34blDzwNRwBMr0/br8IEXp290=
 github.com/project-flogo/core v0.9.0-rc.2/go.mod h1:dzmBbQfNNC0g0KClKYQxxGJLe53MHafg75Vhmw2TW8U=
+github.com/project-flogo/eftl v0.0.0-20190318194200-d6dc627012e5 h1:1a8pogZjYcnu7t6iZq9PAD7xOF9zEMs6DLRYQGTQtXs=
+github.com/project-flogo/eftl v0.0.0-20190318194200-d6dc627012e5/go.mod h1:USsDzpeLwZaW5AYh4azXxGc65JlkSS6laFqOct3ra2k=
+github.com/project-flogo/microgateway v0.0.0-20190305184317-fe88b7799d73/go.mod h1:2AD3PHPNm91BUno1UTPF5HGdgi6/cZ4Wu0giM8JyTh4=
 github.com/project-flogo/microgateway v0.0.0-20190319203104-747b5cae041f h1:2HJ7qCJmrNvCZ56mdY/7dWCroHbnervMi9QSwnkF7Bc=
 github.com/project-flogo/microgateway v0.0.0-20190319203104-747b5cae041f/go.mod h1:3hJTjH3ri5CAaa1orStplPYQ1RxM2brIziLM16XHgyo=
 github.com/project-flogo/microgateway v0.0.0-20190514042636-a605923ac754 h1:9YkzfzGn+CZyUf6xp7lIg6VXw7kH2tBzuNn5CkxoRcw=
@@ -137,6 +147,7 @@ github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f h1:J9EGpcZtP
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 h1:EzJWgHovont7NscjpAxXsDA8S8BMYve8Y5+7cuRE7R0=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
+github.com/xeipuuv/gojsonschema v0.0.0-20181016150526-f3a9dae5b194/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=
 github.com/xeipuuv/gojsonschema v1.1.0 h1:ngVtJC9TY/lg0AA/1k48FYhBrhRoFlEmWzsehpNAaZg=
 github.com/xeipuuv/gojsonschema v1.1.0/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=
 github.com/xtgo/set v1.0.0/go.mod h1:d3NHzGzSa0NmB2NhFyECA+QdRp29oEn2xbT+TpeFoM8=
