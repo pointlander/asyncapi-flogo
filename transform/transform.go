@@ -124,7 +124,7 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 					handler.Actions = append(handler.Actions, &actionConfig)
 					trig.Handlers = append(trig.Handlers, &handler)
 				}
-				if channel.Publish != nil {
+				if channel.Publish != nil && p.activity != "" {
 					s.protocolInfo = nil
 					if len(channel.Publish.ProtocolInfo) > 0 {
 						err := json.Unmarshal(channel.Publish.ProtocolInfo, &s.protocolInfo)
@@ -488,6 +488,29 @@ var configs = [...]protocolConfig{
 					}
 				}
 			}
+			return settings
+		},
+	},
+	{
+		name:        "ws",
+		secure:      "wss",
+		trigger:     "github.com/project-flogo/websocket/trigger/wsclient",
+		port:        "9099",
+		contentPath: "content",
+		triggerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"url": s.url,
+			}
+			if s.userPassword {
+				// not supported
+			}
+			if s.secure {
+				// supproted
+			}
+			return settings
+		},
+		handlerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{}
 			return settings
 		},
 	},
