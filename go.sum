@@ -84,6 +84,7 @@ github.com/project-flogo/contrib/activity/log v0.0.0-20190318145021-54b56025362c
 github.com/project-flogo/contrib/activity/log v0.9.0-rc.1.0.20190509204259-4246269fb68e h1:zuoN/Oak9MfxrLh6fwmaeQygQAjSB7JVKj12lczQUys=
 github.com/project-flogo/contrib/activity/log v0.9.0-rc.1.0.20190509204259-4246269fb68e/go.mod h1:vLsMeHqqlxod+KUcjbAhQPixrpyyO/MBuUp32eWVXCA=
 github.com/project-flogo/contrib/activity/rest v0.0.0-20190318145021-54b56025362c/go.mod h1:er/hLSql054TeyhED80XCFpBXum9zwlxJWCDyrYyMXg=
+github.com/project-flogo/contrib/activity/rest v0.9.0-rc.1.0.20190509204259-4246269fb68e h1:7PsA98NCY5zoqb6BPfKx7lcHVI1iKo05WXXd20BIsUU=
 github.com/project-flogo/contrib/activity/rest v0.9.0-rc.1.0.20190509204259-4246269fb68e/go.mod h1:GXDiVb2CBMq0qryawBim3yqe6+WsUKKgQXxtqsWRJXI=
 github.com/project-flogo/contrib/function v0.0.0-20190318145021-54b56025362c h1:75/CBDBUUhWd7pVrzrsuXLe0H9KEu6BNLATyTtCKfKE=
 github.com/project-flogo/contrib/function v0.0.0-20190318145021-54b56025362c/go.mod h1:Y/rZQdXA+M1VM448+fUrJwuu8Yq+mGrNH2MUjUMnKGw=

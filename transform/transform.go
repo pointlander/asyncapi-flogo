@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
+	"strconv"
 
 	parser "github.com/asyncapi/parser/pkg"
 	_ "github.com/asyncapi/parser/pkg/errs"
@@ -46,6 +48,7 @@ type settings struct {
 	userPassword bool
 	serverIndex  int
 	url          string
+	urlPort      string
 	user         string
 	password     string
 	trustStore   string
@@ -81,6 +84,7 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 			attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
 			brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
 			flogo.Properties = append(flogo.Properties, attribute)
+
 			s := settings{
 				protocolConfig: p,
 				secure:         server.Protocol == p.secure,
@@ -94,6 +98,20 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 				keyFile:        "=$env[KEY_FILE]",
 				extensions:     server.Extensions,
 			}
+
+			if parsed, err := url.Parse(server.Url); err == nil {
+				if port := parsed.Port(); port != "" {
+					value, err := strconv.Atoi(port)
+					if err != nil {
+						panic(err)
+					}
+					s.urlPort = fmt.Sprintf("%s%dPort", p.name, i)
+					attribute := data.NewAttribute(s.urlPort, data.TypeInt, value)
+					s.urlPort = fmt.Sprintf("=$property[%s]", s.urlPort)
+					flogo.Properties = append(flogo.Properties, attribute)
+				}
+			}
+
 			trig := trigger.Config{
 				Id:       fmt.Sprintf("%s%d", p.name, i),
 				Ref:      p.trigger,
@@ -511,6 +529,111 @@ var configs = [...]protocolConfig{
 		},
 		handlerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{}
+			return settings
+		},
+	},
+	{
+		name:        "http",
+		secure:      "https",
+		trigger:     "github.com/project-flogo/contrib/trigger/rest",
+		activity:    "github.com/project-flogo/contrib/activity/rest",
+		port:        "9100",
+		contentPath: "content",
+		triggerSettings: func(s settings) map[string]interface{} {
+			port := "80"
+			if s.secure {
+				port = "443"
+			}
+			if s.urlPort != "" {
+				port = s.urlPort
+			}
+			settings := map[string]interface{}{
+				"port": port,
+			}
+			if s.userPassword {
+				// not supported
+			}
+			if s.secure {
+				settings["enableTLS"] = true
+				settings["certFile"] = s.certFile
+				settings["keyFile"] = s.keyFile
+			}
+			return settings
+		},
+		handlerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"path": s.topic,
+			}
+			if s.protocolInfo != nil {
+				if value := s.protocolInfo["flogo-http"]; value != nil {
+					if http, ok := value.(map[string]interface{}); ok {
+						if value := http["method"]; value != nil {
+							if method, ok := value.(string); ok {
+								settings["method"] = method
+							}
+						}
+					}
+				}
+			}
+			return settings
+		},
+		serviceSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"uri": fmt.Sprintf("=string.concat(%s, \"%s\")", s.url[1:], s.topic),
+			}
+			if s.userPassword {
+				// not supported
+			}
+			if s.protocolInfo != nil {
+				if value := s.protocolInfo["flogo-http"]; value != nil {
+					if http, ok := value.(map[string]interface{}); ok {
+						if value := http["method"]; value != nil {
+							if method, ok := value.(string); ok {
+								settings["method"] = method
+							}
+						}
+						if value := http["headers"]; value != nil {
+							if headers, ok := value.(map[string]string); ok {
+								settings["headers"] = headers
+							}
+						}
+						if value := http["proxy"]; value != nil {
+							if proxy, ok := value.(string); ok {
+								settings["proxy"] = proxy
+							}
+						}
+						if value := http["timeout"]; value != nil {
+							if timeout, ok := value.(float64); ok {
+								settings["timeout"] = int64(timeout)
+							}
+						}
+						if s.secure {
+							sslConfig := map[string]interface{}{
+								"certFile": s.certFile,
+								"keyFile":  s.keyFile,
+							}
+							skipVerify := true
+							if value := http["skipVerify"]; value != nil {
+								if skipVerifyValue, ok := value.(bool); ok {
+									settings["skipVerify"] = skipVerifyValue
+									skipVerify = skipVerifyValue
+								}
+							}
+							useSystemCert := true
+							if value := http["useSystemCert"]; !skipVerify && value != nil {
+								if useSystemCertValue, ok := value.(bool); ok {
+									settings["useSystemCert"] = useSystemCertValue
+									useSystemCert = useSystemCertValue
+								}
+							}
+							if !useSystemCert {
+								sslConfig["caFile"] = s.trustStore
+							}
+							settings["sslConfig"] = sslConfig
+						}
+					}
+				}
+			}
 			return settings
 		},
 	},
