@@ -1,7 +1,7 @@
 asyncapi: '2.0.0-rc1'
 id: 'urn:com:kafka:server'
 info:
-  title: Streetlights API
+  title: Kafka Application
   version: '1.0.0'
   description: Kafka Application
   license:

@@ -1,17 +1,23 @@
 asyncapi: '2.0.0-rc1'
-id: 'urn:com:eftl:server'
+id: 'urn:com:mqtt:server'
 info:
-  title: EFTL Application
+  title: MQTT Application
   version: '1.0.0'
-  description: EFTL Application
+  description: MQTT Application
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
 servers:
-  - url: ws://localhost:9191/channel
+  - url: ssl://localhost:1883
     description: Development server
-    protocol: eftl
+    protocol: secure-mqtt
     protocolVersion: '1.0.0'
+    x-store: 'store.s'
+    x-clean-session: false
+    x-keep-alive: 30
+    x-auto-reconnect: false
+    x-skip-verify: false
+    x-use-systemcert: false
 channels:
   message:
     description: A message channel
@@ -19,10 +25,21 @@ channels:
       summary: Get messages
       message:
         $ref: '#/components/messages/message'
+      protocolInfo:
+        flogo-kafka:
+          replyTopic: "test"
+          qos: 1
     publish:
       summary: Send messages
       message:
         $ref: '#/components/messages/message'
+      protocolInfo:
+        flogo-kafka:
+          store: 'store0.s'
+          cleanSession: false
+          qos: 1
+          skipVerify: false
+          useSystemCert: false
   dup:
     description: A duplicate message channel
     subscribe:

@@ -1,9 +1,9 @@
 asyncapi: '2.0.0-rc1'
 id: 'urn:com:eftl:server'
 info:
-  title: Streetlights API
+  title: EFTL Application
   version: '1.0.0'
-  description: Kafka Application
+  description: EFTL Application
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0

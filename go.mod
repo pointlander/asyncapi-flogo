@@ -12,6 +12,8 @@ require (
 	github.com/project-flogo/contrib/trigger/kafka v0.9.1
 	github.com/project-flogo/contrib/trigger/rest v0.9.0-rc.1.0.20190509204259-4246269fb68e
 	github.com/project-flogo/core v0.9.0
+	github.com/project-flogo/edge-contrib/activity/mqtt v0.0.0-20190517193603-1b376c241189
+	github.com/project-flogo/edge-contrib/trigger/mqtt v0.0.0-20190517193603-1b376c241189
 	github.com/project-flogo/eftl v0.0.0-20190318194200-d6dc627012e5
 	github.com/project-flogo/microgateway v0.0.0-20190514214306-204c38dcda09
 	github.com/spf13/cobra v0.0.3
