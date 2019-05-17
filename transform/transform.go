@@ -34,79 +34,79 @@ type protocolConfig struct {
 	name, secure      string
 	trigger, activity string
 	port              string
-	urlSetting        string
-	trustStoreSetting string
-	topicSetting      string
 	contentPath       string
+	triggerSettings   func(s settings) map[string]interface{}
+	handlerSettings   func(s settings) map[string]interface{}
+	serviceSettings   func(s settings) map[string]interface{}
+}
+
+type settings struct {
+	protocolConfig
+	secure       bool
+	userPassword bool
+	serverIndex  int
+	url          string
+	user         string
+	password     string
+	trustStore   string
+	extensions   map[string]json.RawMessage
+	topic        string
+	protocolInfo map[string]interface{}
+}
+
+func userPassword(server *models.Server, schemes map[string]interface{}) bool {
+	for _, requirement := range server.Security {
+		for scheme := range *requirement {
+			if entry := schemes[scheme]; entry != nil {
+				if definition, ok := entry.(map[string]interface{}); ok {
+					if value := definition["type"]; value != nil {
+						if typ, ok := value.(string); ok && typ == "userPassword" {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[string]interface{}, flogo *app.Config) {
 	services := make([]*api.Service, 0, 8)
 	for i, server := range model.Servers {
-		if isSecure := server.Protocol == p.secure; server.Protocol == p.name || isSecure {
-			hasUserPassword := false
-			for _, requirement := range server.Security {
-				for scheme := range *requirement {
-					if entry := schemes[scheme]; entry != nil {
-						if definition, ok := entry.(map[string]interface{}); ok {
-							if value := definition["type"]; value != nil {
-								if typ, ok := value.(string); ok && typ == "userPassword" {
-									hasUserPassword = true
-								}
-							}
-						}
-					}
-				}
-			}
+		if server.Protocol == p.name || server.Protocol == p.secure {
 			brokerUrls := fmt.Sprintf("%s%dURL", p.name, i)
 			attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
 			brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
 			flogo.Properties = append(flogo.Properties, attribute)
+			s := settings{
+				protocolConfig: p,
+				secure:         server.Protocol == p.secure,
+				userPassword:   userPassword(server, schemes),
+				serverIndex:    i,
+				url:            brokerUrls,
+				user:           "=$env[USER]",
+				password:       "=$env[PASSWORD]",
+				trustStore:     "=$env[TRUST_STORE]",
+				extensions:     server.Extensions,
+			}
 			trig := trigger.Config{
-				Id:  fmt.Sprintf("%s%d", p.name, i),
-				Ref: p.trigger,
-				Settings: map[string]interface{}{
-					p.urlSetting: brokerUrls,
-				},
-			}
-			if p.name == "eftl" || p.name == "eftl-secure" {
-				trig.Settings["id"] = p.name
-			}
-			if hasUserPassword {
-				trig.Settings["user"] = "=$env[USER]"
-				trig.Settings["password"] = "=$env[PASSWORD]"
-			}
-			if isSecure {
-				trig.Settings[p.trustStoreSetting] = "=$env[TRUST_STORE]"
+				Id:       fmt.Sprintf("%s%d", p.name, i),
+				Ref:      p.trigger,
+				Settings: p.triggerSettings(s),
 			}
 			for name, channel := range model.Channels {
+				s.topic = name
 				if channel.Subscribe != nil {
-					settings := map[string]interface{}{
-						p.topicSetting: name,
-					}
+					s.protocolInfo = nil
 					if len(channel.Subscribe.ProtocolInfo) > 0 {
-						var protocolInfo map[string]interface{}
-						err := json.Unmarshal(channel.Subscribe.ProtocolInfo, &protocolInfo)
+						err := json.Unmarshal(channel.Subscribe.ProtocolInfo, &s.protocolInfo)
 						if err != nil {
 							panic(err)
 						}
-						if value := protocolInfo["flogo-kafka"]; value != nil {
-							if flogo, ok := value.(map[string]interface{}); ok {
-								if value := flogo["partitions"]; value != nil {
-									if partitions, ok := value.(string); ok {
-										settings["partitions"] = partitions
-									}
-								}
-								if value := flogo["offset"]; value != nil {
-									if offset, ok := value.(float64); ok {
-										settings["offset"] = int64(offset)
-									}
-								}
-							}
-						}
 					}
 					handler := trigger.HandlerConfig{
-						Settings: settings,
+						Settings: p.handlerSettings(s),
 					}
 					action := action.Config{
 						Ref: "github.com/project-flogo/microgateway",
@@ -121,25 +121,18 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 					trig.Handlers = append(trig.Handlers, &handler)
 				}
 				if channel.Publish != nil {
-					settings := map[string]interface{}{
-						p.urlSetting:   brokerUrls,
-						p.topicSetting: name,
-					}
-					if p.name == "eftl" || p.name == "eftl-secure" {
-						settings["id"] = p.name
-					}
-					if hasUserPassword {
-						settings["user"] = "=$.env[USER]"
-						settings["password"] = "=$.env[PASSWORD]"
-					}
-					if isSecure {
-						settings[p.trustStoreSetting] = "=$.env[TRUST_STORE]"
+					s.protocolInfo = nil
+					if len(channel.Publish.ProtocolInfo) > 0 {
+						err := json.Unmarshal(channel.Publish.ProtocolInfo, &s.protocolInfo)
+						if err != nil {
+							panic(err)
+						}
 					}
 					service := &api.Service{
 						Name:        fmt.Sprintf("%s-name-%s", p.name, name),
 						Ref:         p.activity,
 						Description: fmt.Sprintf("%s service", p.name),
-						Settings:    settings,
+						Settings:    p.serviceSettings(s),
 					}
 					services = append(services, service)
 				}
@@ -235,6 +228,109 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 	}
 }
 
+var configs = [...]protocolConfig{
+	{
+		name:        "kafka",
+		secure:      "kafka-secure",
+		trigger:     "github.com/project-flogo/contrib/trigger/kafka",
+		activity:    "github.com/project-flogo/contrib/activity/kafka",
+		port:        "9096",
+		contentPath: "message",
+		triggerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"brokerUrls": s.url,
+			}
+			if s.userPassword {
+				settings["user"] = s.user
+				settings["password"] = s.password
+			}
+			if s.secure {
+				settings["trustStore"] = s.trustStore
+			}
+			return settings
+		},
+		handlerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"topic": s.topic,
+			}
+			if s.protocolInfo != nil {
+				if value := s.protocolInfo["flogo-kafka"]; value != nil {
+					if flogo, ok := value.(map[string]interface{}); ok {
+						if value := flogo["partitions"]; value != nil {
+							if partitions, ok := value.(string); ok {
+								settings["partitions"] = partitions
+							}
+						}
+						if value := flogo["offset"]; value != nil {
+							if offset, ok := value.(float64); ok {
+								settings["offset"] = int64(offset)
+							}
+						}
+					}
+				}
+			}
+			return settings
+		},
+		serviceSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"brokerUrls": s.url,
+				"topic":      s.topic,
+			}
+			if s.userPassword {
+				settings["user"] = s.user
+				settings["password"] = s.password
+			}
+			if s.secure {
+				settings["trustStore"] = s.trustStore
+			}
+			return settings
+		},
+	},
+	{
+		name:        "eftl",
+		secure:      "eftl-secure",
+		trigger:     "github.com/project-flogo/eftl/trigger",
+		activity:    "github.com/project-flogo/eftl/activity",
+		port:        "9097",
+		contentPath: "content",
+		triggerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"id":  fmt.Sprintf("%s%d", s.name, s.serverIndex),
+				"url": s.url,
+			}
+			if s.userPassword {
+				settings["user"] = s.user
+				settings["password"] = s.password
+			}
+			if s.secure {
+				settings["ca"] = s.trustStore
+			}
+			return settings
+		},
+		handlerSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"dest": s.topic,
+			}
+			return settings
+		},
+		serviceSettings: func(s settings) map[string]interface{} {
+			settings := map[string]interface{}{
+				"id":   fmt.Sprintf("%s%s", s.name, s.topic),
+				"url":  s.url,
+				"dest": s.topic,
+			}
+			if s.userPassword {
+				settings["user"] = s.user
+				settings["password"] = s.password
+			}
+			if s.secure {
+				settings["ca"] = s.trustStore
+			}
+			return settings
+		},
+	},
+}
+
 func convert(input string) *app.Config {
 	document, err := ioutil.ReadFile(input)
 	if err != nil {
@@ -267,30 +363,6 @@ func convert(input string) *app.Config {
 		}
 	}
 
-	configs := [...]protocolConfig{
-		{
-			name:              "kafka",
-			secure:            "kafka-secure",
-			trigger:           "github.com/project-flogo/contrib/trigger/kafka",
-			activity:          "github.com/project-flogo/contrib/activity/kafka",
-			port:              "9096",
-			urlSetting:        "brokerUrls",
-			trustStoreSetting: "trustStore",
-			topicSetting:      "topic",
-			contentPath:       "message",
-		},
-		{
-			name:              "eftl",
-			secure:            "eftl-secure",
-			trigger:           "github.com/project-flogo/eftl/trigger",
-			activity:          "github.com/project-flogo/eftl/activity",
-			port:              "9097",
-			urlSetting:        "url",
-			trustStoreSetting: "ca",
-			topicSetting:      "dest",
-			contentPath:       "content",
-		},
-	}
 	for _, config := range configs {
 		config.protocol(&model, schemes, &flogo)
 	}
