@@ -2,7 +2,7 @@ module github.com/pointlander/asyncapi-flogo
 
 go 1.12
 
-replace github.com/project-flogo/core => github.com/pointlander/core v0.9.0-alpha.0.0.20190516170615-e0b906d347b3
+replace github.com/project-flogo/core => github.com/pointlander/core v0.9.0-alpha.0.0.20190521204626-d0604d8121c1
 
 require (
 	github.com/asyncapi/parser v0.0.0-20190506150237-e2e785dfad03
@@ -16,7 +16,7 @@ require (
 	github.com/project-flogo/edge-contrib/activity/mqtt v0.0.0-20190517193603-1b376c241189
 	github.com/project-flogo/edge-contrib/trigger/mqtt v0.0.0-20190517193603-1b376c241189
 	github.com/project-flogo/eftl v0.0.0-20190318194200-d6dc627012e5
-	github.com/project-flogo/microgateway v0.0.0-20190514214306-204c38dcda09
+	github.com/project-flogo/microgateway v0.0.0-20190521205136-e8ff8943422a
 	github.com/project-flogo/websocket v0.0.0-20190201184711-2efafcb15730
 	github.com/spf13/cobra v0.0.3
 )

@@ -63,6 +63,8 @@ github.com/pointlander/core v0.9.0-alpha.0.0.20190515213745-c23a014704fa h1:DaMp
 github.com/pointlander/core v0.9.0-alpha.0.0.20190515213745-c23a014704fa/go.mod h1:QGWi7TDLlhGUaYH3n/16ImCuulbEHGADYEXyrcHhX7U=
 github.com/pointlander/core v0.9.0-alpha.0.0.20190516170615-e0b906d347b3 h1:ECPgJsSQ6j3xObyW+SpdjmPy3OVd3gtiSnBPcNN4PCA=
 github.com/pointlander/core v0.9.0-alpha.0.0.20190516170615-e0b906d347b3/go.mod h1:QGWi7TDLlhGUaYH3n/16ImCuulbEHGADYEXyrcHhX7U=
+github.com/pointlander/core v0.9.0-alpha.0.0.20190521204626-d0604d8121c1 h1:UBOqqJKfYu0xQdrSi42mRTdj1UjVnQhORC1YdoV9EE8=
+github.com/pointlander/core v0.9.0-alpha.0.0.20190521204626-d0604d8121c1/go.mod h1:QGWi7TDLlhGUaYH3n/16ImCuulbEHGADYEXyrcHhX7U=
 github.com/project-flogo/cli v0.9.0-rc.2 h1:rPHa4xnX3GZzjVGXhBhuN8t3/YdMpyX0hoGgOxNCX8Q=
 github.com/project-flogo/cli v0.9.0-rc.2/go.mod h1:rBScDq+LWdU3fZOKjBwDIpanYPqCabL6oMQZThdxx+0=
 github.com/project-flogo/contrib v0.9.0-alpha.3.0.20190115023822-118c915f5736/go.mod h1:tdinBFJomgOs2xQJCc3igHomrCeu2JaHu1EbuYb56Ww=
@@ -136,6 +138,8 @@ github.com/project-flogo/microgateway v0.0.0-20190514204303-d00cfc27506a h1:9/lI
 github.com/project-flogo/microgateway v0.0.0-20190514204303-d00cfc27506a/go.mod h1:1ya8ueQJmiyBeZ/Ztk41esMm+hYWSr1d7rrxNHiMa98=
 github.com/project-flogo/microgateway v0.0.0-20190514214306-204c38dcda09 h1:jLZbsqilKsGyyZUb0pgv3NkRTxPCbVGekWYz2rO7pzA=
 github.com/project-flogo/microgateway v0.0.0-20190514214306-204c38dcda09/go.mod h1:QdqoHdWDbF9buPXG5/uUjwW2jdWSi6uGGtAGQ5LVfDc=
+github.com/project-flogo/microgateway v0.0.0-20190521205136-e8ff8943422a h1:fJucDAq9CZdPUMeuUQ8inRKLxbV6+LCD3ZEbtuP0eys=
+github.com/project-flogo/microgateway v0.0.0-20190521205136-e8ff8943422a/go.mod h1:7hQ4Q2FtPMUOC1hDoWwnKLNw0yKo4FY5MAct+gnPGNI=
 github.com/project-flogo/websocket v0.0.0-20190201184711-2efafcb15730 h1:MPRDzlGChqv/DGgEdGjoM2u5wfnno62Z/5PEfFmkZAs=
 github.com/project-flogo/websocket v0.0.0-20190201184711-2efafcb15730/go.mod h1:Lws/2/1ySgYdCJ8xQJe+zS3DO6i1ldQjr+Zr7dJ6KJg=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=
