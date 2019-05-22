@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"strconv"
+	"strings"
 
 	parser "github.com/asyncapi/parser/pkg"
 	_ "github.com/asyncapi/parser/pkg/errs"
@@ -37,6 +39,7 @@ type protocolConfig struct {
 	port              int
 	contentPath       string
 	triggerSettings   func(s settings) map[string]interface{}
+	setTopic          func(s *settings, base, topic string)
 	handlerSettings   func(s settings) map[string]interface{}
 	serviceSettings   func(s settings) map[string]interface{}
 }
@@ -252,7 +255,7 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 				Settings: p.triggerSettings(s),
 			}
 			for name, channel := range model.Channels {
-				s.topic = name
+				p.setTopic(&s, server.BaseChannel, name)
 				if channel.Subscribe != nil {
 					s.protocolInfo = nil
 					if len(channel.Subscribe.ProtocolInfo) > 0 {
@@ -407,6 +410,15 @@ var configs = [...]protocolConfig{
 			}
 			return settings
 		},
+		setTopic: func(s *settings, base, topic string) {
+			if base != "" {
+				base = strings.TrimRight(strings.TrimLeft(base, "."), ".")
+				topic = strings.TrimRight(strings.TrimLeft(topic, "."), ".")
+				s.topic = fmt.Sprintf("%s.%s", base, topic)
+				return
+			}
+			s.topic = topic
+		},
 		handlerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
 				"topic": s.topic,
@@ -464,6 +476,13 @@ var configs = [...]protocolConfig{
 				settings["ca"] = s.trustStore
 			}
 			return settings
+		},
+		setTopic: func(s *settings, base, topic string) {
+			if base != "" {
+				s.topic = fmt.Sprintf("%s_%s", base, topic)
+				return
+			}
+			s.topic = topic
 		},
 		handlerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
@@ -565,6 +584,9 @@ var configs = [...]protocolConfig{
 			}
 			return settings
 		},
+		setTopic: func(s *settings, base, topic string) {
+			s.topic = path.Join(base, topic)
+		},
 		handlerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
 				"topic": s.topic,
@@ -663,6 +685,13 @@ var configs = [...]protocolConfig{
 			}
 			return settings
 		},
+		setTopic: func(s *settings, base, topic string) {
+			if base != "" {
+				s.topic = fmt.Sprintf("%s_%s", base, topic)
+				return
+			}
+			s.topic = topic
+		},
 		handlerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{}
 			return settings
@@ -695,6 +724,13 @@ var configs = [...]protocolConfig{
 				settings["keyFile"] = s.keyFile
 			}
 			return settings
+		},
+		setTopic: func(s *settings, base, topic string) {
+			topic = path.Join(base, topic)
+			if !strings.HasPrefix(topic, "/") {
+				topic = "/" + topic
+			}
+			s.topic = topic
 		},
 		handlerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{

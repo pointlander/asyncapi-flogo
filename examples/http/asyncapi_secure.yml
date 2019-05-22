@@ -12,6 +12,7 @@ servers:
     description: Development server
     protocol: https
     protocolVersion: '1.0.0'
+    baseChannel: 'test'
     variables:
       port:
         description: HTTP port number
@@ -20,7 +21,7 @@ servers:
           - '1234'
           - '1235'
 channels:
-  /message:
+  message:
     description: A message channel
     subscribe:
       summary: Get messages
@@ -46,7 +47,7 @@ channels:
           timeout: 30
           skipVerify: false
           useSystemCert: false
-  /dup/{id}:
+  dup/{id}:
     description: A duplicate message channel
     subscribe:
       summary: Get messages
