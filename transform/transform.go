@@ -726,9 +726,23 @@ var configs = [...]protocolConfig{
 			return settings
 		},
 		serviceSettings: func(s settings) map[string]interface{} {
-			settings := map[string]interface{}{
-				"uri": fmt.Sprintf("=string.concat(%s, '%s')", s.url[1:], s.topic),
+			path := s.topic
+			chunks, hasVariables := parseURL(s.topic)
+			if hasVariables {
+				translated := ""
+				for _, chunk := range chunks {
+					if chunk.value != "" {
+						translated += chunk.value
+					} else {
+						translated += ":" + chunk.name
+					}
+				}
+				path = translated
 			}
+			settings := map[string]interface{}{
+				"uri": fmt.Sprintf("=string.concat(%s, '%s')", s.url[1:], path),
+			}
+
 			if s.userPassword {
 				// not supported
 			}
