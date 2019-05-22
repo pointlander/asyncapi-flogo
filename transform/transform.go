@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"strconv"
 
 	parser "github.com/asyncapi/parser/pkg"
@@ -35,7 +34,7 @@ func Transform(input, output, conversionType string) {
 type protocolConfig struct {
 	name, secure      string
 	trigger, activity string
-	port              string
+	port              int
 	contentPath       string
 	triggerSettings   func(s settings) map[string]interface{}
 	handlerSettings   func(s settings) map[string]interface{}
@@ -76,14 +75,125 @@ func userPassword(server *models.Server, schemes map[string]interface{}) bool {
 	return false
 }
 
+type chunk struct {
+	name  string
+	value string
+}
+
+func parseURL(url string) ([]chunk, bool) {
+	var (
+		chunks      []chunk
+		parsed      []rune
+		hasVariable bool
+	)
+	for _, s := range url {
+		switch s {
+		case '{':
+			if len(parsed) > 0 {
+				chunks, parsed = append(chunks, chunk{value: string(parsed)}), parsed[:0]
+			}
+		case '}':
+			if len(parsed) > 0 {
+				chunks, parsed = append(chunks, chunk{name: string(parsed)}), parsed[:0]
+				hasVariable = true
+			}
+		default:
+			parsed = append(parsed, s)
+		}
+	}
+	if len(parsed) > 0 {
+		chunks, parsed = append(chunks, chunk{value: string(parsed)}), parsed[:0]
+	}
+	return chunks, hasVariable
+}
+
+func getPort(url string) ([]chunk, bool) {
+	var (
+		chunks      []chunk
+		parsed      []rune
+		hasVariable bool
+	)
+	foundPort := false
+	for _, s := range url {
+		if foundPort {
+			if s == '/' {
+				foundPort = false
+			} else {
+				switch s {
+				case '{':
+					if len(parsed) > 0 {
+						chunks, parsed = append(chunks, chunk{value: string(parsed)}), parsed[:0]
+					}
+				case '}':
+					if len(parsed) > 0 {
+						chunks, parsed = append(chunks, chunk{name: string(parsed)}), parsed[:0]
+					}
+					hasVariable = true
+				default:
+					parsed = append(parsed, s)
+				}
+			}
+		} else if s == ':' {
+			foundPort = true
+		}
+	}
+	if len(parsed) > 0 {
+		chunks, parsed = append(chunks, chunk{value: string(parsed)}), parsed[:0]
+	}
+
+	return chunks, hasVariable
+}
+
 func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[string]interface{}, flogo *app.Config) {
 	services := make([]*api.Service, 0, 8)
 	for i, server := range model.Servers {
 		if server.Protocol == p.name || server.Protocol == p.secure {
-			brokerUrls := fmt.Sprintf("%s%dURL", p.name, i)
-			attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
-			brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
-			flogo.Properties = append(flogo.Properties, attribute)
+			if server.Variables != nil {
+				for name, variable := range *server.Variables {
+					defaultValue, foundDefault := variable.Default, false
+					for j, value := range variable.Enum {
+						if value == defaultValue {
+							foundDefault = true
+							attribute := data.NewAttribute(fmt.Sprintf("%s%d_%s", p.name, i, name), data.TypeString, value)
+							flogo.Properties = append(flogo.Properties, attribute)
+							continue
+						}
+						attribute := data.NewAttribute(fmt.Sprintf("%s%d_%s_%d", p.name, i, name, j), data.TypeString, value)
+						flogo.Properties = append(flogo.Properties, attribute)
+					}
+					if !foundDefault {
+						attribute := data.NewAttribute(fmt.Sprintf("%s%d_%s", p.name, i, name), data.TypeString, defaultValue)
+						flogo.Properties = append(flogo.Properties, attribute)
+					}
+				}
+			}
+
+			brokerUrls := ""
+			if chunks, hasVariable := parseURL(server.Url); hasVariable {
+				if len(chunks) > 1 {
+					comma := ""
+					brokerUrls += "=string.concat("
+					for _, chunk := range chunks {
+						if chunk.name != "" {
+							brokerUrls += fmt.Sprintf("%s$property[%s%d_%s]", comma, p.name, i, chunk.name)
+							comma = ", "
+							continue
+						}
+						brokerUrls += fmt.Sprintf("%s'%s'", comma, chunk.value)
+						comma = ", "
+					}
+					brokerUrls += ")"
+				} else {
+					chunk := chunks[0]
+					brokerUrls += "="
+					brokerUrls += fmt.Sprintf("$property[%s%d_%s]", p.name, i, chunk.name)
+				}
+			} else {
+				brokerUrls = fmt.Sprintf("%s%dURL", p.name, i)
+				attribute := data.NewAttribute(brokerUrls, data.TypeString, server.Url)
+				brokerUrls = fmt.Sprintf("=$property[%s]", brokerUrls)
+				flogo.Properties = append(flogo.Properties, attribute)
+			}
 
 			s := settings{
 				protocolConfig: p,
@@ -99,8 +209,32 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 				extensions:     server.Extensions,
 			}
 
-			if parsed, err := url.Parse(server.Url); err == nil {
-				if port := parsed.Port(); port != "" {
+			if chunks, hasVariable := getPort(server.Url); len(chunks) > 0 {
+				if hasVariable {
+					if len(chunks) > 1 {
+						comma := ""
+						s.urlPort += "=string.integer(string.concat("
+						for _, chunk := range chunks {
+							if chunk.name != "" {
+								s.urlPort += fmt.Sprintf("%s$property[%s%d_%s]", comma, p.name, i, chunk.name)
+								comma = ", "
+								continue
+							}
+							s.urlPort += fmt.Sprintf("%s'%s'", comma, chunk.value)
+							comma = ", "
+						}
+						s.urlPort += "))"
+					} else {
+						chunk := chunks[0]
+						s.urlPort += "=string.integer("
+						s.urlPort += fmt.Sprintf("$property[%s%d_%s]", p.name, i, chunk.name)
+						s.urlPort += ")"
+					}
+				} else {
+					port := ""
+					for _, p := range chunks {
+						port += p.value
+					}
 					value, err := strconv.Atoi(port)
 					if err != nil {
 						panic(err)
@@ -257,7 +391,7 @@ var configs = [...]protocolConfig{
 		secure:      "kafka-secure",
 		trigger:     "github.com/project-flogo/contrib/trigger/kafka",
 		activity:    "github.com/project-flogo/contrib/activity/kafka",
-		port:        "9096",
+		port:        9096,
 		contentPath: "message",
 		triggerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
@@ -314,7 +448,7 @@ var configs = [...]protocolConfig{
 		secure:      "eftl-secure",
 		trigger:     "github.com/project-flogo/eftl/trigger",
 		activity:    "github.com/project-flogo/eftl/activity",
-		port:        "9097",
+		port:        9097,
 		contentPath: "content",
 		triggerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
@@ -357,7 +491,7 @@ var configs = [...]protocolConfig{
 		secure:      "secure-mqtt",
 		trigger:     "github.com/project-flogo/edge-contrib/trigger/mqtt",
 		activity:    "github.com/project-flogo/edge-contrib/activity/mqtt",
-		port:        "9098",
+		port:        9098,
 		contentPath: "message",
 		triggerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
@@ -514,7 +648,7 @@ var configs = [...]protocolConfig{
 		name:        "ws",
 		secure:      "wss",
 		trigger:     "github.com/project-flogo/websocket/trigger/wsclient",
-		port:        "9099",
+		port:        9099,
 		contentPath: "content",
 		triggerSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
@@ -538,7 +672,7 @@ var configs = [...]protocolConfig{
 		secure:      "https",
 		trigger:     "github.com/project-flogo/contrib/trigger/rest",
 		activity:    "github.com/project-flogo/contrib/activity/rest",
-		port:        "9100",
+		port:        9100,
 		contentPath: "content",
 		triggerSettings: func(s settings) map[string]interface{} {
 			port := "80"
@@ -580,7 +714,7 @@ var configs = [...]protocolConfig{
 		},
 		serviceSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
-				"uri": fmt.Sprintf("=string.concat(%s, \"%s\")", s.url[1:], s.topic),
+				"uri": fmt.Sprintf("=string.concat(%s, '%s')", s.url[1:], s.topic),
 			}
 			if s.userPassword {
 				// not supported

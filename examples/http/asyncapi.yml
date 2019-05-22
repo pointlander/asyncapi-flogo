@@ -8,10 +8,17 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
 servers:
-  - url: http://localhost:1234
+  - url: http://localhost:{port}
     description: Development server
     protocol: http
     protocolVersion: '1.0.0'
+    variables:
+      port:
+        description: HTTP port number
+        default: '1234'
+        enum:
+          - '1234'
+          - '1235'
 channels:
   /message:
     description: A message channel
