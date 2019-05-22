@@ -345,7 +345,8 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 		action := action.Config{
 			Ref: "github.com/project-flogo/microgateway",
 			Settings: map[string]interface{}{
-				"uri": fmt.Sprintf("microgateway:%sPublish", p.name),
+				"uri":   fmt.Sprintf("microgateway:%sPublish", p.name),
+				"async": true,
 			},
 		}
 		actionConfig := trigger.ActionConfig{
