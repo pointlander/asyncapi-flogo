@@ -36,7 +36,7 @@ channels:
       protocolInfo:
         flogo-http:
           method: "POST"
-  /dup:
+  /dup/{id}:
     description: A duplicate message channel
     subscribe:
       summary: Get messages

@@ -699,6 +699,19 @@ var configs = [...]protocolConfig{
 			settings := map[string]interface{}{
 				"path": s.topic,
 			}
+			chunks, hasVariables := parseURL(s.topic)
+			if hasVariables {
+				translated := ""
+				for _, chunk := range chunks {
+					if chunk.value != "" {
+						translated += chunk.value
+					} else {
+						translated += ":" + chunk.name
+					}
+				}
+				settings["path"] = translated
+			}
+
 			if s.protocolInfo != nil {
 				if value := s.protocolInfo["flogo-http"]; value != nil {
 					if http, ok := value.(map[string]interface{}); ok {

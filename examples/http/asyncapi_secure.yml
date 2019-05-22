@@ -20,7 +20,7 @@ servers:
           - '1234'
           - '1235'
 channels:
-  message:
+  /message:
     description: A message channel
     subscribe:
       summary: Get messages
@@ -46,7 +46,7 @@ channels:
           timeout: 30
           skipVerify: false
           useSystemCert: false
-  dup:
+  /dup/{id}:
     description: A duplicate message channel
     subscribe:
       summary: Get messages
