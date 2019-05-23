@@ -623,7 +623,7 @@ var configs = [...]protocolConfig{
 		},
 		serviceSettings: func(s settings) map[string]interface{} {
 			settings := map[string]interface{}{
-				"id":     fmt.Sprintf("%s%d", s.name, s.serverIndex),
+				"id":     fmt.Sprintf("%s%d_%s", s.name, s.serverIndex, s.topic),
 				"broker": s.url,
 				"topic":  s.topic,
 			}
