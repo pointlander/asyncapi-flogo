@@ -12,30 +12,30 @@ servers:
     description: Development server
     protocol: secure-mqtt
     protocolVersion: '1.0.0'
-    x-store: 'store.s'
+    x-store: ':memory:'
     x-clean-session: false
-    x-keep-alive: 30
-    x-auto-reconnect: false
+    x-keep-alive: 2
+    x-auto-reconnect: true
     x-skip-verify: false
     x-use-systemcert: false
 channels:
-  message:
+  message/{id}:
     description: A message channel
     subscribe:
       summary: Get messages
       message:
         $ref: '#/components/messages/message'
       protocolInfo:
-        flogo-kafka:
-          replyTopic: "test"
+        flogo-mqtt:
+          replyTopic: ""
           qos: 1
     publish:
       summary: Send messages
       message:
         $ref: '#/components/messages/message'
       protocolInfo:
-        flogo-kafka:
-          store: 'store0.s'
+        flogo-mqtt:
+          store: ':memory:'
           cleanSession: false
           qos: 1
           skipVerify: false

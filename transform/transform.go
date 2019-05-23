@@ -591,6 +591,18 @@ var configs = [...]protocolConfig{
 			settings := map[string]interface{}{
 				"topic": s.topic,
 			}
+			chunks, hasVariables := parseURL(s.topic)
+			if hasVariables {
+				translated := ""
+				for _, chunk := range chunks {
+					if chunk.value != "" {
+						translated += chunk.value
+					} else {
+						translated += "+"
+					}
+				}
+				settings["topic"] = translated
+			}
 			if s.protocolInfo != nil {
 				if value := s.protocolInfo["flogo-mqtt"]; value != nil {
 					if mqtt, ok := value.(map[string]interface{}); ok {
@@ -601,7 +613,7 @@ var configs = [...]protocolConfig{
 						}
 						if value := mqtt["qos"]; value != nil {
 							if qos, ok := value.(float64); ok {
-								settings["replyTopic"] = int64(qos)
+								settings["qos"] = int64(qos)
 							}
 						}
 					}
@@ -634,7 +646,7 @@ var configs = [...]protocolConfig{
 						}
 						if value := mqtt["qos"]; value != nil {
 							if qos, ok := value.(float64); ok {
-								settings["replyTopic"] = int64(qos)
+								settings["qos"] = int64(qos)
 							}
 						}
 						if s.secure {
