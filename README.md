@@ -42,6 +42,7 @@ asyncapi-flogo -input examples/http/asyncapi.yml -type flogodescriptor
 The resulting output is `flogo.json` which can be built into a working flogo application:
 ```sh
 flogo create -f flogo.json flogoapp
+mv support.go urn:com:http:server/src/
 cd urn:com:http:server
 flogo build
 ./bin/urn:com:http:server
