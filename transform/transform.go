@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -147,7 +148,7 @@ func getPort(url string) ([]chunk, bool) {
 	return chunks, hasVariable
 }
 
-func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[string]interface{}, flogo *app.Config) {
+func (p protocolConfig) protocol(support *bytes.Buffer, model *models.AsyncapiDocument, schemes map[string]interface{}, flogo *app.Config) {
 	services := make([]*api.Service, 0, 8)
 	for i, server := range model.Servers {
 		if server.Protocol == p.name || server.Protocol == p.secure {
@@ -255,7 +256,11 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 				Settings: p.triggerSettings(s),
 			}
 			for name, channel := range model.Channels {
-				p.setTopic(&s, server.BaseChannel, name)
+				if strings.HasPrefix(name, "/") {
+					s.topic = name
+				} else {
+					p.setTopic(&s, server.BaseChannel, name)
+				}
 				if channel.Subscribe != nil {
 					s.protocolInfo = nil
 					if len(channel.Subscribe.ProtocolInfo) > 0 {
@@ -276,6 +281,10 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 					}
 					actionConfig := trigger.ActionConfig{
 						Config: &action,
+						Input: map[string]interface{}{
+							"channel": fmt.Sprintf("='%s'", s.topic),
+							"message": fmt.Sprintf("=$.%s", p.contentPath),
+						},
 					}
 					handler.Actions = append(handler.Actions, &actionConfig)
 					trig.Handlers = append(trig.Handlers, &handler)
@@ -311,13 +320,33 @@ func (p protocolConfig) protocol(model *models.AsyncapiDocument, schemes map[str
 			Description: "logging service",
 		}
 		gateway.Services = append(gateway.Services, service)
+		service = &api.Service{
+			Name:        "methodinvoker",
+			Ref:         "github.com/nareshkumarthota/flogocomponents/activity/methodinvoker",
+			Description: "invoke a method",
+		}
+		gateway.Services = append(gateway.Services, service)
 		step := &api.Step{
 			Service: "log",
 			Input: map[string]interface{}{
-				"message": fmt.Sprintf("=$.payload.%s", p.contentPath),
+				"message": "=$.payload.message",
 			},
 		}
 		gateway.Steps = append(gateway.Steps, step)
+		step = &api.Step{
+			Service: "methodinvoker",
+			Input: map[string]interface{}{
+				"methodName": fmt.Sprintf("%sMethod", p.name),
+				"inputData":  "=$.payload",
+			},
+		}
+		gateway.Steps = append(gateway.Steps, step)
+		fmt.Fprintf(support, "func %sMethod(inputs interface{}) (map[string]interface{}, error) {\n", p.name)
+		fmt.Fprintf(support, "\treturn nil, nil\n")
+		fmt.Fprintf(support, "}\n")
+		fmt.Fprintf(support, "func init() {\n")
+		fmt.Fprintf(support, "\tmethodinvoker.RegisterMethods(\"%sMethod\", %sMethod)\n", p.name, p.name)
+		fmt.Fprintf(support, "}\n")
 
 		raw, err := json.Marshal(gateway)
 		if err != nil {
@@ -850,7 +879,7 @@ var configs = [...]protocolConfig{
 	},
 }
 
-func convert(input string) *app.Config {
+func convert(input string) (*bytes.Buffer, *app.Config) {
 	document, err := ioutil.ReadFile(input)
 	if err != nil {
 		panic(err)
@@ -882,22 +911,33 @@ func convert(input string) *app.Config {
 		}
 	}
 
+	support := bytes.Buffer{}
+	fmt.Fprintf(&support, "package main\n")
+	fmt.Fprintf(&support, "import \"github.com/nareshkumarthota/flogocomponents/activity/methodinvoker\"\n")
 	for _, config := range configs {
-		config.protocol(&model, schemes, &flogo)
+		config.protocol(&support, &model, schemes, &flogo)
 	}
 
-	return &flogo
+	return &support, &flogo
 }
 
 // ToAPI converts an asyn api to a API flogo application
 func ToAPI(input, output string) {
-	flogo := convert(input)
+	support, flogo := convert(input)
+	err := ioutil.WriteFile(output+"/support.go", support.Bytes(), 0644)
+	if err != nil {
+		panic(err)
+	}
 	coreapi.Generate(flogo, output+"/app.go")
 }
 
 // ToJSON converts an async api to a JSON flogo application
 func ToJSON(input, output string) {
-	flogo := convert(input)
+	support, flogo := convert(input)
+	err := ioutil.WriteFile(output+"/support.go", support.Bytes(), 0644)
+	if err != nil {
+		panic(err)
+	}
 	data, err := json.MarshalIndent(flogo, "", "  ")
 	if err != nil {
 		panic(err)

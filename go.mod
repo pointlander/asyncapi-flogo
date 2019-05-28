@@ -9,6 +9,7 @@ replace (
 
 require (
 	github.com/asyncapi/parser v0.0.0-20190506150237-e2e785dfad03
+	github.com/nareshkumarthota/flogocomponents v0.0.0-20190410061230-d24c4239918a
 	github.com/project-flogo/cli v0.9.0-rc.2
 	github.com/project-flogo/contrib/activity/kafka v0.9.1-0.20190516180541-534215f1b7ac
 	github.com/project-flogo/contrib/activity/log v0.9.0-rc.1.0.20190509204259-4246269fb68e

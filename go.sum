@@ -39,6 +39,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/leesper/go_rng v0.0.0-20171009123644-5344a9259b21/go.mod h1:N0SVk0uhy+E1PZ3C9ctsPRlvOPAFPkCNlcPBDkt0N3U=
 github.com/msoap/byline v1.1.1 h1:imxWvm9wIHNGePF/peiOxcL1vgVLK3/qKsMW75XZn9c=
 github.com/msoap/byline v1.1.1/go.mod h1:E2oCrXddpzrmu4NmrwEv4Qiyweo62Yp3+w3IN3X2sq8=
+github.com/nareshkumarthota/flogocomponents v0.0.0-20190410061230-d24c4239918a h1:W0trJBWTh+ozzFwZL52+ezVDKBZf1z/5Hi5KDlLgUlU=
+github.com/nareshkumarthota/flogocomponents v0.0.0-20190410061230-d24c4239918a/go.mod h1:jesaR+m0ohy3Ntwp6qvCiBHUytKnoDZTz8+ZNxcYz40=
 github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852 h1:Yl0tPBa8QPjGmesFh1D0rDy+q1Twx6FyU7VWHi8wZbI=
 github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852/go.mod h1:eqOVx5Vwu4gd2mmMZvVZsgIqNSaW3xxRThUJ0k/TPk4=
 github.com/pierrec/lz4 v0.0.0-20190327172049-315a67e90e41 h1:GeinFsrjWz97fAxVUEd748aV0cYL+I6k44gFJTCVvpU=
