@@ -14,7 +14,7 @@ require (
 	github.com/project-flogo/contrib/activity/kafka v0.9.1-0.20190516180541-534215f1b7ac
 	github.com/project-flogo/contrib/activity/log v0.9.0-rc.1.0.20190509204259-4246269fb68e
 	github.com/project-flogo/contrib/activity/rest v0.9.0-rc.1.0.20190509204259-4246269fb68e
-	github.com/project-flogo/contrib/trigger/kafka v0.9.1
+	github.com/project-flogo/contrib/trigger/kafka v0.9.1-0.20190603184501-d845e1d612f8
 	github.com/project-flogo/contrib/trigger/rest v0.9.0-rc.1.0.20190509204259-4246269fb68e
 	github.com/project-flogo/core v0.9.0
 	github.com/project-flogo/edge-contrib/activity/mqtt v0.0.0-20190521185544-b79879165f97

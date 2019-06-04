@@ -118,6 +118,7 @@ github.com/project-flogo/contrib/trigger/kafka v0.9.0-rc.1 h1:9jJKzAuaUsrA/OpkdY
 github.com/project-flogo/contrib/trigger/kafka v0.9.0-rc.1/go.mod h1:Rq0WUPgI676xELxO36hanbgS7gMT7eTAX9bR8lEXbIE=
 github.com/project-flogo/contrib/trigger/kafka v0.9.0 h1:EhDEpQOIsdz2Y/4pdGBoUEuAS8XIPrh60p5OfgAV5ts=
 github.com/project-flogo/contrib/trigger/kafka v0.9.0/go.mod h1:NqVLzyM1u4dMGp9q06YsI/JahK/oFNvpV+72tKIt8bk=
+github.com/project-flogo/contrib/trigger/kafka v0.9.1-0.20190603184501-d845e1d612f8/go.mod h1:NqVLzyM1u4dMGp9q06YsI/JahK/oFNvpV+72tKIt8bk=
 github.com/project-flogo/contrib/trigger/kafka v0.9.1 h1:oQ3Ym0DyF9HsiEuTs3Ty/j9L7WVa56VaZD8kQOdkY7o=
 github.com/project-flogo/contrib/trigger/kafka v0.9.1/go.mod h1:NqVLzyM1u4dMGp9q06YsI/JahK/oFNvpV+72tKIt8bk=
 github.com/project-flogo/contrib/trigger/rest v0.0.0-20190318145021-54b56025362c/go.mod h1:k0U1vznzbRJ4A4NLoYVl+UQDoxIl/ANqfbtRjSO7xP0=
