@@ -13,12 +13,11 @@ import (
 	_ "github.com/asyncapi/parser/pkg/errs"
 	"github.com/asyncapi/parser/pkg/models"
 	"github.com/project-flogo/core/action"
-	coreapi "github.com/project-flogo/core/api"
 	"github.com/project-flogo/core/app"
 	"github.com/project-flogo/core/app/resource"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/trigger"
-	_ "github.com/project-flogo/microgateway"
+	"github.com/project-flogo/microgateway"
 	"github.com/project-flogo/microgateway/api"
 )
 
@@ -928,7 +927,7 @@ func ToAPI(input, output string) {
 	if err != nil {
 		panic(err)
 	}
-	coreapi.Generate(flogo, output+"/app.go")
+	microgateway.Generate(flogo, output+"/app.go")
 }
 
 // ToJSON converts an async api to a JSON flogo application
